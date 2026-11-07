@@ -33,7 +33,9 @@ export function analyseTopics(
 
   return Array.from(groups.entries())
     .map(([topic, result]) => {
-      const percent = Math.round((result.correct / result.total) * 100);\n      const status: TopicResult["status"] = percent >= 80 ? "Strong" : percent >= 50 ? "Medium" : "Weak";
+      const percent = Math.round((result.correct / result.total) * 100);
+      const status: TopicResult["status"] =
+        percent >= 80 ? "Strong" : percent >= 50 ? "Medium" : "Weak";
       return {
         topic,
         ...result,
