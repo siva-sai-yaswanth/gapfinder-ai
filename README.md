@@ -14,7 +14,7 @@ The idea is simple: instead of revising every chapter in the same way, students 
 ## What is implemented
 
 - Paste study material into the workspace.
-- Generate five multiple-choice questions using the Groq API.
+- Split study text into overlapping source chunks before generation.\n- Retrieve relevant chunks using lightweight lexical matching, then pass only those retrieved passages to Groq for five multiple-choice questions.\n- Include source chunk identifiers in generated questions.
 - Keep questions grounded in the supplied material through the quiz-generation prompt.
 - Submit answers and see the score and explanations.
 - Group questions by topic and show a preliminary Strong / Medium / Weak result.
@@ -67,7 +67,7 @@ This is an early working prototype, not a finished learning management system.
 
 - The current upload flow supports text and Markdown files. PDF text extraction is not implemented yet.
 - Topic-level results are based on the questions generated and the student's score. They are preliminary indicators, not a validated measure of mastery.
-- The material assistant uses lightweight keyword-based passage selection. It is not yet a full embedding/vector-search RAG system.
+- Retrieval is currently lightweight lexical matching over overlapping text chunks. Retrieval and generation are separate stages, but this is not an embedding/vector-database implementation.\n- Source references currently identify internal chunk IDs (for example, S1), not verified PDF page/section citations.
 - Student accounts, database-backed progress history and persistent profiles are not implemented.
 - The revision plan is currently generated from quiz performance using simple rules.
 
@@ -91,3 +91,4 @@ Never put API keys in frontend code or commit them to GitHub.
 ## Project status
 
 Working prototype deployed on Vercel. Features and limitations are documented above so the current implementation can be evaluated accurately.
+\n\n## RAG flow\n\n1. **Ingestion:** student-provided text is split into overlapping chunks.\n2. **Retrieval:** a lexical matcher selects the most relevant chunks for the quiz-generation task.\n3. **Generation:** the Groq model receives only the retrieved passages and is instructed to generate questions grounded in those passages.\n4. **Attribution:** each question includes the source chunk ID so the selected passage can be traced.\n\nThe current retrieval stage is intentionally simple and transparent. Embeddings, vector search, PDF page-level citations and stronger retrieval evaluation remain future work.\n
