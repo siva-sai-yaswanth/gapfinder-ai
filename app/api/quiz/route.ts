@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { retrieveChunks } from "@/lib/retrieval";
 
 type GeneratedQuestion = {
   topic: string;
@@ -68,15 +69,25 @@ export async function POST(req: Request) {
       );
     }
 
+    const retrieved = retrieveChunks(material, "main concepts topics definitions processes equations key ideas", 8);
+    if (retrieved.length === 0) {
+      return NextResponse.json({ error: "No usable passages could be retrieved from the supplied material." }, { status: 400 });
+    }
+
+    const sourceContext = retrieved
+      .map((chunk) => `[Source ${chunk.id} · character offset ${chunk.start}]\\n${chunk.text}`)
+      .join("\\n\\n");
+
     const prompt = [
-      "Create five multiple-choice diagnostic questions strictly from the supplied study material.",
+      "Create five multiple-choice diagnostic questions using ONLY the retrieved source passages below.",
+      "Retrieval has already happened before generation. Do not use outside knowledge or infer unsupported facts.",
       "Return ONLY a valid JSON array. Do not use Markdown fences or introductory text.",
-      "Each object must have: topic (string), question (string), options (array of exactly 4 strings), answer (zero-based integer 0-3), explanation (string), source (short heading or excerpt).",
-      "Do not use facts unsupported by the material.",
+      "Each object must have: topic (string), question (string), options (array of exactly 4 strings), answer (zero-based integer 0-3), explanation (string), source (exact source label such as S1).",
+      "Every question must be answerable from one or more supplied source passages. Use the exact source ID in the source field.",
       "",
-      "STUDY MATERIAL:",
-      material.slice(0, 30000),
-    ].join("\n");
+      "RETRIEVED SOURCE PASSAGES:",
+      sourceContext,
+    ].join("\\n");
 
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
