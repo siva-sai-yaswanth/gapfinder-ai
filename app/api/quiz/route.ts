@@ -75,8 +75,8 @@ export async function POST(req: Request) {
     }
 
     const sourceContext = retrieved
-      .map((chunk) => `[Source ${chunk.id} · character offset ${chunk.start}]\\n${chunk.text}`)
-      .join("\\n\\n");
+      .map((chunk) => `[Source ${chunk.id} · character offset ${chunk.start}]\n${chunk.text}`)
+      .join("\n\n");
 
     const prompt = [
       "Create five multiple-choice diagnostic questions using ONLY the retrieved source passages below.",
@@ -87,7 +87,7 @@ export async function POST(req: Request) {
       "",
       "RETRIEVED SOURCE PASSAGES:",
       sourceContext,
-    ].join("\\n");
+    ].join("\n");
 
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
@@ -123,7 +123,13 @@ export async function POST(req: Request) {
     }
 
     const questions = parseQuiz(raw);
-    return NextResponse.json({ questions: questions.map((question, index) => ({ ...question, id: index + 1 })) });
+    const validSources = new Set(retrieved.map((chunk) => chunk.id));
+    const withSources = questions.map((question, index) => {
+      const cited = question.source.match(/S\\d+/)?.[0];
+      const source = cited && validSources.has(cited) ? cited : retrieved[index % retrieved.length].id;
+      return { ...question, id: index + 1, source };
+    });
+    return NextResponse.json({ questions: withSources, sources: retrieved.map(({ id, start, text }) => ({ id, start, excerpt: text.slice(0, 180) })) });
   } catch (error) {
     const message =
       error instanceof Error
